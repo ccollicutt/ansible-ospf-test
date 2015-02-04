@@ -1,0 +1,4 @@
+---
+
+- name: reload ospfd
+  command: ospfctl reload

@@ -1,0 +1,10 @@
+---
+
+- name: get default route
+  command: ip -4 route list 0/0
+  register: default_route
+  changed_when: False
+
+- name: set default route
+  shell: ip route delete default && ip route add default via 10.0.10.2
+  when: "'10.0.2.2' in default_route.stdout"

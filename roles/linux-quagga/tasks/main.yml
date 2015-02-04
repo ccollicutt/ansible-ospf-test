@@ -1,0 +1,67 @@
+---
+
+- name: ensure quagga is installed
+  apt: >
+    name=quagga
+    state=present
+
+- name: copy over quagga daemons file from template
+  template: >
+    src=quagga-daemons.conf.j2
+    dest=/etc/quagga/daemons
+    owner=quagga
+    group=quagga
+    mode=0600
+  notify:
+    - restart quagga
+
+# FIXME: will be changed every time, may need to copy empty file
+- name: touch required but empty quagga files
+  copy: >
+    src=empty-file
+    dest=/etc/quagga/{{ item }}
+    owner=quagga
+    group=quagga
+    mode=0600
+  with_items:
+    - bgpd.conf
+    - ospf6d.conf
+    - ripd.conf
+    - ripngd.conf
+
+- name: install zebra and ospfd configuration files
+  template: >
+    src={{ item }}.j2
+    dest=/etc/quagga/{{ item }}
+    owner=quagga
+    group=quagga
+    mode=0600
+  with_items:
+    - ospfd.conf
+    - zebra.conf
+  notify:
+    - restart quagga
+
+- name: ensure quagga is running
+  service: >
+    name=quagga
+    state=running
+
+- name: get default route
+  command: ip -4 route list 0/0
+  register: default_route
+  changed_when: False
+
+- name: set default route
+  shell: ip route delete default && ip route add default via 172.0.1.2
+  when: "'10.0.2.2' in default_route.stdout"
+
+- name: check if 172.0.3.10 has been added
+  shell: ip address show | grep 172.0.3.10
+  register: vip
+  ignore_errors: True
+  changed_when: False
+
+- name: add 172.0.3.10 as vip
+  shell: ip address add 172.0.3.10 dev eth1
+  when: vip.rc != 0

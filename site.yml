@@ -1,0 +1,13 @@
+---
+
+- hosts: router
+  roles:
+    - openbsd-ospf
+
+- hosts: zones
+  roles:
+    - linux-quagga
+
+- hosts: client
+  roles:
+    - linux-client

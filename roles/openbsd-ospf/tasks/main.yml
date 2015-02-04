@@ -1,0 +1,56 @@
+---
+
+- name: enable packet forwarding
+  lineinfile: >
+    dest=/etc/sysctl.conf
+    line="net.inet.ip.forwarding=1"
+  register: ip_forwarding
+
+- name: enable packet forwarding from command line
+  command: sysctl net.inet.ip.forwarding=1
+  when: ip_forwarding.changed
+
+- name: enable multipath routing
+  lineinfile: >
+    dest=/etc/sysctl.conf
+    line="net.inet.ip.multipath=1"
+  register: multipath_routing
+
+- name: enabled multipath routing from the command line
+  command: sysctl net.inet.ip.multipath=1
+  when: multipath_routing.changed
+
+- name: check if pf is disabled
+  shell: pfctl -si | head -1
+  register: pfctl
+  changed_when: False
+
+- name: disable pf
+  command: pfctl -d
+  changed_when: False
+  when: '"enabled" in pfctl.stdout'
+
+- name: turn on ospfd
+  lineinfile: >
+    dest=/etc/rc.conf
+    regexp="^ospfd_flags=NO"
+    line='ospfd_flags=""'
+    backrefs=yes
+
+- name: install ospfd.conf from template
+  template: >
+    src=ospfd.conf.j2
+    dest=/etc/ospfd.conf
+    mode=0600
+  notify:
+    - reload ospfd
+
+- name: check if ospfd is running
+  command: pgrep -f ospfd
+  register: ospfd
+  changed_when: False
+  ignore_errors: True
+
+- name: start ospfd
+  command: /usr/sbin/ospfd
+  when: ospfd.rc != 0
