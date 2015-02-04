@@ -1,5 +1,7 @@
 # Testing OSPF
 
+(Note there's a "blog post":http://serverascode.com/2015/02/02/quagga-openospfd.html that talks a bit more about this repo and what it does.)
+
 This repository sets up four nodes:
 
 * Linux client
